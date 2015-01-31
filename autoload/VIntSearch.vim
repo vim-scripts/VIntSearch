@@ -115,12 +115,20 @@ function! s:Cc(linenum)
 endfunction
 
 function! s:Cnext()
-	execute 'cnext'
+	try
+		execute 'cnext'
+	catch E553
+		echo 'VIntSearch: Cnext: No more items'
+	endtry
 	call s:CheckJumpAfterSearch()
 endfunction
 
 function! s:Cprev()
-	execute 'cprev'
+	try
+		execute 'cprev'
+	catch E553
+		echo 'VIntSearch: Cprev: No more items'
+	endtry
 	call s:CheckJumpAfterSearch()
 endfunction
 
@@ -299,39 +307,57 @@ endfunction
 
 function! s:MakeFindOpt()
 	let findopt = ""
-	for i in range(len(g:vintsearch_codeexts))
-		let ext = g:vintsearch_codeexts[i]
-		let findopt = findopt."-iname \'*.".ext."\'"
-		if i<len(g:vintsearch_codeexts)-1
-			let findopt = findopt." -o "
+	for i in range(len(g:vintsearch_search_exclude_patterns))
+		let pattern = g:vintsearch_search_exclude_patterns[i]
+		let findopt = findopt."-ipath \'".pattern."\'"
+		let findopt = findopt." -prune -o "
+	endfor
+	for i in range(len(g:vintsearch_search_include_patterns))
+		let pattern = g:vintsearch_search_include_patterns[i]
+		let findopt = findopt."-ipath \'".pattern."\'"
+		if i<len(g:vintsearch_search_include_patterns)-1
+			let findopt = findopt." -print -o "
 		endif
 	endfor
+	"echo findopt
 	return findopt
 endfunction
 
+fun! s:CombineGrepPatterns(patterns)
+	let combStr = ""
+	if len(a:patterns)==1
+		let combStr = combStr.a:patterns[0]
+	else
+		let combStr = combStr."{"
+		for i in range(len(a:patterns))
+			let pattern = a:patterns[i]
+			let combStr = combStr.pattern
+			if i<len(a:patterns)-1
+				let combStr = combStr.","
+			endif
+		endfor
+		let combStr = combStr."}"
+	endif
+	return combStr
+endfun
+
 function! s:MakeGrepOpt()
-	let grepopt = "--include=*.{"
-	for i in range(len(g:vintsearch_codeexts))
-		let ext = g:vintsearch_codeexts[i]
-		let grepopt = grepopt.ext
-		if i<len(g:vintsearch_codeexts)-1
-			let grepopt = grepopt.","
-		endif
-	endfor
-	let grepopt = grepopt."}"
+	let includeStr = s:CombineGrepPatterns(g:vintsearch_search_include_patterns)
+	let excludeStr = s:CombineGrepPatterns(g:vintsearch_search_exclude_patterns)
+	let grepopt = "--include=".includeStr." --exclude=".excludeStr." --exclude-dir=".excludeStr
 	return grepopt
 endfunction
 
 function! s:MakeFindStrOpt()
 	let findstropt = ""
-	for i in range(len(g:vintsearch_codeexts))
-		let ext = '*.'.g:vintsearch_codeexts[i]
-		let findstropt = findstropt.ext
+	for i in range(len(g:vintsearch_search_include_patterns))
+		let pattern = g:vintsearch_search_include_patterns[i]
+		let findstropt = findstropt.pattern
 		if i<len(g:vintsearch_codeexts)-1
 			let findstropt = findstropt." "
 		endif
 	endfor
-	echo findstropt
+	"echo findstropt
 	return findstropt
 endfunction
 
@@ -407,7 +433,7 @@ function! s:BuildTag()
 	execute 'cd' prevdir
 	
 	redraw
-	echo "VIntSearch: A tagfile for code files in \'".workdir."\' is created: ".workdir."/".tagfilename
+	echo "VIntSearch: The tag file for all source files under \'".workdir."\' has been created: ".workdir."/".tagfilename
 endfunction
 
 function! s:DoFinishingWork(qflist, keyword, cmd, options, jump_to_firstitem, open_quickfix)
@@ -429,6 +455,12 @@ function! s:DoFinishingWork(qflist, keyword, cmd, options, jump_to_firstitem, op
 	endif
 
 	redraw
+	if exists('g:vintsearch_codeexts')
+		echo 'Notice: g:vintsearch_codeexts is deprecated. 
+			\Please use g:vintsearch_search_include_patterns instead. 
+			\See :help VIntSearch-options for more details.'
+	endif
+
 	echo message
 endfunction
 
@@ -446,7 +478,6 @@ function! s:GetGrepQFList(keyword, options)
 		execute "\:grep! /s ".a:keyword." ".findstropt
 	else	|"grep in unix
 		let grepopt = s:MakeGrepOpt()
-		"echo grepopt
 		execute "\:grep! -r ".grepopt." ".a:options." ".a:keyword." *"
 	endif
 

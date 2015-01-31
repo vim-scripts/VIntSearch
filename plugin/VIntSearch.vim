@@ -28,12 +28,36 @@ endif
 if !exists('g:vintsearch_repodirs')
 	let g:vintsearch_repodirs = ['.git', '.hg', '.svn', '.cvs', '.bzr']
 endif
-if !exists('g:vintsearch_codeexts')
-	let g:vintsearch_codeexts = ["c","cpp","h","hpp","inl","py","lua","vim"]
+if !exists('g:vintsearch_search_include_patterns')
+	let g:vintsearch_search_include_patterns =
+		\ ['*.c','*.cpp','*.h','*.hpp','*.inl','*.py','*.lua','*.vim','*.js',
+		\'*.md','*.txt','*.tex']
+endif
+if !exists('g:vintsearch_search_exclude_patterns')
+	let g:vintsearch_search_exclude_patterns =
+		\ []
 endif
 if !exists('g:vintsearch_qfsplitcmd')
 	let g:vintsearch_qfsplitcmd = 'botright'
 endif
+
+if !exists('g:vintsearch_enable_default_quickfix_enter')
+	let g:vintsearch_enable_default_quickfix_enter = 1
+endif
+
+"" autocmd
+augroup VIntSearchAutoCmds
+	autocmd!
+	if g:vintsearch_enable_default_quickfix_enter==1
+		autocmd FileType qf nnoremap <silent> <buffer> <CR> :call DefaultQuickFixEnter()<CR>
+		autocmd FileType qf nnoremap <silent> <buffer> <2-LeftMouse> :call DefaultQuickFixEnter()<CR>
+	endif
+augroup END
+
+function! DefaultQuickFixEnter()
+	let lnumqf = line('.')
+	execute 'silent! :VScc '.lnumqf
+endfunction
 
 "" commands 
 
