@@ -26,7 +26,7 @@ It supports two search methods (i.e. ctags and grep) and shows results in an int
 ## Installation
 
 - Using plugin managers (recommended)
-    - [Vundle](https://github.com/gmarik/Vundle.vim) : Add `Bundle 'yssl/VIntSearch'` to .vimrc & `:BundleInstall`
+    - [Vundle](https://github.com/gmarik/Vundle.vim) : Add `Plugin 'yssl/VIntSearch'` to .vimrc & `:PluginInstall`
     - [NeoBundle](https://github.com/Shougo/neobundle.vim) : Add `NeoBundle 'yssl/VIntSearch'` to .vimrc & `:NeoBundleInstall`
     - [vim-plug](https://github.com/junegunn/vim-plug) : Add `Plug 'yssl/VIntSearch'` to .vimrc & `:PlugInstall`
 - Using [Pathogen](https://github.com/tpope/vim-pathogen)
@@ -58,7 +58,7 @@ You can check ```:help g:vintsearch_searchpathmode``` to see how the *search pat
 
 ## Search Commands
 
-All following commands search the *search path* recursively. Search results are updated in Quickfix.
+All following commands search the *search path* recursively, except ~Local commands. Search results are updated in Quickfix.
 
 **:VIntSearchListCursorGrep**  
 **:VIntSearchListCursorCtags**  
@@ -81,6 +81,15 @@ Search for [keyword] by grep with [options]. (See ```man grep``` for more detail
 
 **:VIntSearchListTypeCtags** [keyword], **:VSctags** [keyword]  
 Search for [keyword] by ctags.
+
+**:VIntSearchListCursorGrepLocal**  
+Search for a word under the cursor by grep in the current file.
+
+**:VIntSearchListSelectionGrepLocal**  
+Search for visually selected text by grep in the current file.
+
+**:VIntSearchListTypeGrepLocal** [keyword] [options], **:VSgrepL** [keyword] [options]  
+Search for [keyword] by grep with [options] in the current file.
 
 ## Stack Commands
 
