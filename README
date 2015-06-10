@@ -1,5 +1,13 @@
 This is a mirror of http://www.vim.org/scripts/script.php?script_id=5047
 
+More information : https://github.com/yssl/VIntSearch
+
+Screenshots:
+https://cloud.githubusercontent.com/assets/5915359/4852497/9085b67a-607c-11e4-8300-1928ecb5d850.png
+https://cloud.githubusercontent.com/assets/5915359/4852495/903a342a-607c-11e4-8b01-a4dde78d9492.png
+https://cloud.githubusercontent.com/assets/5915359/4852496/907e4ea8-607c-11e4-9c50-e25a8770aad8.png
+
+==============================================================================
 1. Introduction                                             *VIntSearch-intro*
 
 |VIntSearch| is a vim plugin providing an integrated interface across various 
