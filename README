@@ -11,7 +11,8 @@ https://cloud.githubusercontent.com/assets/5915359/4852496/907e4ea8-607c-11e4-9c
 1. Introduction                                             *VIntSearch-intro*
 
 |VIntSearch| is a vim plugin providing an integrated interface across various 
-types of searches. It currently supports symbol search (by ctags) and text search (by grep).
+types of searches. It currently supports symbol search (by ctags), text search 
+(by grep), and file search (by find).
 Search results are given in the quickfix window and a user can conviniently Move
 to previous or next search results via the integrated search stack.
 VIntSearch means Vim Integrated Search.
@@ -78,10 +79,26 @@ Build a tag file for the search path.
 Search for [keyword] by ctags.
 
 *:VIntSearchGrep* [keyword] [grep_options], *:VSgrep* [keyword] [grep_options]  
-Search for [keyword] by grep with [grep_options]. (See `man grep` for more details about [grep_options])
+Search for [keyword] by grep with [grep_options]. [keyword] can be double-quoted and the argument order can be changed.  
+For example:
+```
+:VSgrep tags
+:VSgrep "let tags"
+:VSgrep tags -i
+:VSgrep -i tags
+:VSgrep "let tags" -i
+```
+(See ```man grep``` for more details about [grep_options])
 
 *:VIntSearchCFGrep* [keyword] [grep_options], *:VScfgrep* [keyword] [grep_options]  
 Search for [keyword] by grep with [grep_options] in the current file.
+
+*:VIntSearchFind* [keyword], *:VSfind* [keyword]  
+Search for [keyword] by find (file search). Curently works with -path options of find command.  
+For example,
+```
+:VSfind *test-class.cpp
+```
 
 *:VIntSearchCtagsCursor* [vimmode] [action]  
 Search for keyword under the cursor by ctags.
@@ -100,6 +117,9 @@ Search for keyword under the cursor by grep.
 *:VIntSearchCFGrepCursor* [vimmode] [action]  
 Search for keyword under the cursor by grep in the current file.
 
++**:VIntSearchFindCursor** [vimmode] [action]  
++Search for *keyword* under the cursor by find (file search).
++
 ==============================================================================
 5. Stack Commands                                   *VIntSearch-stackcommands*
 
