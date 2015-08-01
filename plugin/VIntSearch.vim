@@ -1,6 +1,8 @@
-"""""""""""""""""""""""""""""""""""""""""""""
-" template code
-" Exit when your app has already been loaded (or "compatible" mode set)
+" File:         plugin/VIntSearch.vim
+" Description:  "One should be able to jump between all kinds of search results".
+" Author:       yssl <http://github.com/yssl>
+" License:      MIT License
+
 if exists("g:loaded_vintsearch") || &cp
 	finish
 endif
@@ -9,7 +11,6 @@ let s:keepcpo           = &cpo
 set cpo&vim
  
 """""""""""""""""""""""""""""""""""""""""""""
-" my code
 
 "" global variables
 if !exists('g:vintsearch_searchpathmode')
@@ -28,25 +29,40 @@ endif
 if !exists('g:vintsearch_repodirs')
 	let g:vintsearch_repodirs = ['.git', '.hg', '.svn', '.cvs', '.bzr']
 endif
-if !exists('g:vintsearch_search_include_patterns')
-	let g:vintsearch_search_include_patterns =
+if !exists('g:vintsearch_includepatterns')
+	let g:vintsearch_includepatterns =
 		\ ['*.c','*.cpp','*.h','*.hpp','*.inl','*.py','*.lua','*.vim','*.js',
 		\'*.md','*.txt','*.tex']
 endif
-if !exists('g:vintsearch_search_exclude_patterns')
-	let g:vintsearch_search_exclude_patterns =
+if !exists('g:vintsearch_excludepatterns')
+	let g:vintsearch_excludepatterns =
 		\ []
 endif
 if !exists('g:vintsearch_qfsplitcmd')
 	let g:vintsearch_qfsplitcmd = 'botright'
 endif
-
 if !exists('g:vintsearch_enable_default_quickfix_enter')
 	let g:vintsearch_enable_default_quickfix_enter = 1
 endif
-
 if !exists('g:vintsearch_highlight_group')
 	let g:vintsearch_highlight_group = 'Title'
+endif
+if !exists('g:vintsearch_symbol_defaultcmd')
+	let g:vintsearch_symbol_defaultcmd = 'ctags'
+endif
+if !exists('g:vintsearch_text_defaultcmd')
+	let g:vintsearch_text_defaultcmd = 'grep'
+endif
+if !exists('g:vintsearch_file_defaultcmd')
+	let g:vintsearch_file_defaultcmd = 'find'
+endif
+
+"" deprecated global variables
+if exists('g:vintsearch_search_include_patterns')
+	let g:vintsearch_includepatterns = g:vintsearch_search_include_patterns
+endif
+if exists('g:vintsearch_search_exclude_patterns')
+	let g:vintsearch_excludepatterns = g:vintsearch_search_exclude_patterns
 endif
 
 "" autocmd
@@ -65,7 +81,7 @@ endfunction
 
 "" commands 
 
-" useful grep options
+" Useful grep options
 " -w, --word-regexp
 " -F, --fixed-strings
 " -i, --ignore-case
@@ -76,36 +92,39 @@ endfunction
 command! VIntSearchPrintPath call VIntSearch#PrintSearchPath()
 command! VSpath call VIntSearch#PrintSearchPath()
 
-command! VIntSearchBuildTag call VIntSearch#BuildTag()
-command! VSbtag call VIntSearch#BuildTag()
+command! VIntSearchBuildSymbolDB call VIntSearch#BuildSymbolDB()
+command! VSbuild call VIntSearch#BuildSymbolDB()
 
 """""""""""""""""
 " search commands
 
-command! -complete=tag -nargs=1 VIntSearchCtags call VIntSearch#SearchRaw(<f-args>,'ctags')
-command! -complete=tag -nargs=1 VSctags call VIntSearch#SearchRaw(<f-args>,'ctags')
+" :VStext -i tags
+" :VStext tags -i
+" :VStext -i "let tags"
+" :VStext "let tags" -i
 
-" You can put grep options into <f-args>
-" ex)	:Vsgrep -i tags
-" 		:Vsgrep tags -i
-" 		:Vsgrep -i "let tags"
-" 		:Vsgrep "let tags" -i
-command! -complete=tag -nargs=1 VIntSearchGrep call VIntSearch#SearchRaw(<f-args>,'grep')
-command! -complete=tag -nargs=1 VSgrep call VIntSearch#SearchRaw(<f-args>,'grep')
+" :VIntSearch text vint -i
+" :VIntSearch text "call VInt"
 
-command! -complete=tag -nargs=1 VIntSearchCFGrep call VIntSearch#SearchRaw(<f-args>,'cfgrep')
-command! -complete=tag -nargs=1 VScfgrep call VIntSearch#SearchRaw(<f-args>,'cfgrep')
+" :VIntSearchCmd text grep vint -i
+" :VIntSearchCmd text grep "call VInt"
 
-command! -complete=tag -nargs=1 VIntSearchFind call VIntSearch#SearchRaw(<f-args>,'find')
-command! -complete=tag -nargs=1 VSfind call VIntSearch#SearchRaw(<f-args>,'find')
+" :VIntSearchCursor symbol n j
+" :VIntSearchCursor text n l
 
-"""""""""""""""""
-" search commands with cursor
+" :VIntSearchCursor symbol ctags n j
+" :VIntSearchCursor text grep n l
 
-command! -complete=tag -nargs=* VIntSearchCtagsCursor call VIntSearch#SearchCursor('ctags',<f-args>)
-command! -complete=tag -nargs=* VIntSearchGrepCursor call VIntSearch#SearchCursor('grep',<f-args>)
-command! -complete=tag -nargs=* VIntSearchCFGrepCursor call VIntSearch#SearchCursor('cfgrep',<f-args>)
-command! -complete=tag -nargs=* VIntSearchFindCursor call VIntSearch#SearchCursor('find',<f-args>)
+command! -complete=tag -nargs=1 VSsymbol call VIntSearch#SearchRawDefault('symbol', <f-args>)
+command! -complete=tag -nargs=1 VStext call VIntSearch#SearchRawDefault('text', <f-args>)
+command! -complete=tag -nargs=1 VSfile call VIntSearch#SearchRawDefault('file', <f-args>)
+command! -complete=tag -nargs=1 VScftext call VIntSearch#SearchRawDefault('cftext', <f-args>)
+
+command! -complete=tag -nargs=1 VIntSearch call VIntSearch#SearchRawDefaultParse(<f-args>)
+command! -complete=tag -nargs=* VIntSearchCursor call VIntSearch#SearchCursorDefault(<f-args>)
+
+command! -complete=tag -nargs=1 VIntSearchCmd call VIntSearch#SearchRawWithCmdParse(<f-args>)
+command! -complete=tag -nargs=* VIntSearchCursorCmd call VIntSearch#SearchCursorWithCmd(<f-args>)
 
 """""""""""""""""
 " stack commands
@@ -127,49 +146,35 @@ command! VScnext call VIntSearch#Cnext(1)
 command! VScprev call VIntSearch#Cprev(1)
 
 """""""""""""""""
-" deprecated search commands
+" deprecated - will be removed in version 1.4.0
 
-command! VIntSearchJumpCursorCtags call VIntSearch#SearchDep('VIntSearchJumpCursorCtags', expand('<cword>'),'ctags','',0,1,0,1)
-command! VIntSearchJumpCursorGrep call VIntSearch#SearchDep('VIntSearchJumpCursorGrep', expand('<cword>'),'grep','-wF',0,1,0,1)
-
-command! VIntSearchListCursorCtags call VIntSearch#SearchDep('VIntSearchListCursorCtags', expand('<cword>'),'ctags','',0,0,1,1)
-command! VIntSearchListCursorGrep call VIntSearch#SearchDep('VIntSearchListCursorGrep', expand('<cword>'),'grep','-wF',0,0,1,1)
-
-command! VIntSearchJumpSelectionCtags call VIntSearch#SearchDep('VIntSearchJumpSelectionCtags', s:get_visual_selection_dep(),'ctags','',0,1,0,1)
-command! VIntSearchJumpSelectionGrep call VIntSearch#SearchDep('VIntSearchJumpSelectionGrep', s:get_visual_selection_dep(),'grep','-F',1,1,0,1)
-
-command! VIntSearchListSelectionCtags call VIntSearch#SearchDep('VIntSearchListSelectionCtags', s:get_visual_selection_dep(),'ctags','',0,0,1,1)
-command! VIntSearchListSelectionGrep call VIntSearch#SearchDep('VIntSearchListSelectionGrep', s:get_visual_selection_dep(),'grep','-F',1,0,1,1)
-
-command! -complete=tag -nargs=1 VIntSearchListTypeCtags call VIntSearch#SearchRawDep('VIntSearchListTypeCtags', <f-args>,'ctags',0,1,1)
+command! -complete=tag -nargs=1 VIntSearchCtags call VIntSearch#SearchRawDep(<f-args>,'ctags')
+command! -complete=tag -nargs=1 VSctags call VIntSearch#SearchRawDep(<f-args>,'ctags')
 
 " You can put grep options into <f-args>
 " ex)	:Vsgrep -i tags
+" 		:Vsgrep tags -i
 " 		:Vsgrep -i "let tags"
-command! -complete=tag -nargs=1 VIntSearchListTypeGrep call VIntSearch#SearchRawDep('VIntSearchListTypeGrep', <f-args>,'grep',0,1,1)
+" 		:Vsgrep "let tags" -i
+command! -complete=tag -nargs=1 VIntSearchGrep call VIntSearch#SearchRawDep(<f-args>,'grep')
+command! -complete=tag -nargs=1 VSgrep call VIntSearch#SearchRawDep(<f-args>,'grep')
 
-command! VIntSearchListCursorGrepLocal call VIntSearch#SearchDep('VIntSearchListCursorGrepLocal', expand('<cword>'),'grep','-wF',0,0,1,1,expand('%:p'))
-command! VIntSearchListSelectionGrepLocal call VIntSearch#SearchDep('VIntSearchListSelectionGrepLocal', s:get_visual_selection_dep(),'grep','-F',1,0,1,1,expand('%:p'))
+command! -complete=tag -nargs=1 VIntSearchCFGrep call VIntSearch#SearchRawDep(<f-args>,'cfgrep')
+command! -complete=tag -nargs=1 VScfgrep call VIntSearch#SearchRawDep(<f-args>,'cfgrep')
 
-command! -complete=tag -nargs=1 VIntSearchListTypeGrepLocal call VIntSearch#SearchRawDep('VIntSearchListTypeGrepLocal', <f-args>,'grep',0,1,1,expand('%:p'))
+command! -complete=tag -nargs=1 VIntSearchFind call VIntSearch#SearchRawDep(<f-args>,'find')
+command! -complete=tag -nargs=1 VSfind call VIntSearch#SearchRawDep(<f-args>,'find')
 
-"""""""""""""""""""""""""""""""""""""""""""""
-" utility function
+command! -complete=tag -nargs=* VIntSearchCtagsCursor call VIntSearch#SearchCursorDep('ctags',<f-args>)
+command! -complete=tag -nargs=* VIntSearchGrepCursor call VIntSearch#SearchCursorDep('grep',<f-args>)
+command! -complete=tag -nargs=* VIntSearchCFGrepCursor call VIntSearch#SearchCursorDep('cfgrep',<f-args>)
+command! -complete=tag -nargs=* VIntSearchFindCursor call VIntSearch#SearchCursorDep('find',<f-args>)
 
-" thanks for xolox!
-function! s:get_visual_selection_dep()
-	" Why is this not a built-in Vim script function?!
-	let [lnum1, col1] = getpos("'<")[1:2]
-	let [lnum2, col2] = getpos("'>")[1:2]
-	let lines = getline(lnum1, lnum2)
-	let lines[-1] = lines[-1][: col2 - (&selection == 'inclusive' ? 1 : 2)]
-	let lines[0] = lines[0][col1 - 1:]
-	let str =  join(lines, "\n")
-	let str = substitute(str, '"', '\\"', 'g')
-	return str
-endfunction
+command! VIntSearchBuildTag call VIntSearch#BuildTag()
+command! VSbtag call VIntSearch#BuildTag()
 
 """""""""""""""""""""""""""""""""""""""""""""
-" template code
 let &cpo= s:keepcpo
 unlet s:keepcpo
+
+" vim:set noet sw=4 sts=4 ts=4 tw=78:
